@@ -511,7 +511,7 @@ NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
 
 - (void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message
 {
-    //	DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
+    	DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
     
     // A simple example of inbound message handling.
     
