@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "XMPPFramework.h"
 
-@interface AppDelegate : UIResponder <UIApplicationDelegate>
+@interface AppDelegate : UIResponder <UIApplicationDelegate,XMPPRosterStorage>
 
 {
     XMPPStream *xmppStream;
@@ -29,8 +29,6 @@
     BOOL isXmppConnected;
     
     UIWindow *window;
-    UINavigationController *navigationController;
-    UIBarButtonItem *loginButton;
 }
 
 @property (nonatomic, strong, readonly) XMPPStream *xmppStream;
@@ -42,12 +40,12 @@
 @property (nonatomic, strong, readonly) XMPPCapabilities *xmppCapabilities;
 @property (nonatomic, strong, readonly) XMPPCapabilitiesCoreDataStorage *xmppCapabilitiesStorage;
 
-@property (nonatomic, strong) UIWindow *window;
 
 - (NSManagedObjectContext *)managedObjectContext_roster;
 - (NSManagedObjectContext *)managedObjectContext_capabilities;
 
 - (BOOL)connect;
 - (void)disconnect;
+
 @end
 

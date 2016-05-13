@@ -28,7 +28,10 @@ static const int ddLogLevel = DDLogLevelVerbose;
 static const int ddLogLevel = DDLogLevelInfo;
 #endif
 
-@interface AppDelegate ()
+NSString *const kXMPPmyJID = @"kXMPPmyJID";
+NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
+
+@interface AppDelegate()
 
 - (void)setupStream;
 - (void)teardownStream;
@@ -38,8 +41,9 @@ static const int ddLogLevel = DDLogLevelInfo;
 
 @end
 
-NSString *const kXMPPmyJID = @"kXMPPmyJID";
-NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma mark -
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 @implementation AppDelegate
 
@@ -54,8 +58,14 @@ NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
 
 @synthesize window;
 
-- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    // Override point for customization after application launch.
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+    NSString *myJID = @"heb@121.40.143.214:9090/resource";
+    NSString *myPassword = @"lang1260";
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:myJID forKey:kXMPPmyJID];
+    [defaults setObject:myPassword forKey:kXMPPmyPassword];
+    
     // Configure logging framework
     
     [DDLog addLogger:[DDTTYLogger sharedInstance] withLevel:XMPP_LOG_FLAG_SEND_RECV];
@@ -66,37 +76,21 @@ NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
     
     // Setup the view controllers
     
-    [window setRootViewController:navigationController];
-    [window makeKeyAndVisible];
-    
     if (![self connect])
     {
-        NSLog(@"can not connect");
+        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, 0.0 * NSEC_PER_SEC);
+        dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+            
+            
+        });
     }
     
     return YES;
 }
 
-- (void)applicationWillResignActive:(UIApplication *)application {
-    // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-    // Use this method to pause ongoing tasks, disable timers, and throttle down OpenGL ES frame rates. Games should use this method to pause the game.
-}
-
-- (void)applicationDidEnterBackground:(UIApplication *)application {
-    // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
-    // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-}
-
-- (void)applicationWillEnterForeground:(UIApplication *)application {
-    // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-}
-
-- (void)applicationDidBecomeActive:(UIApplication *)application {
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-}
-
-- (void)applicationWillTerminate:(UIApplication *)application {
-    // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+- (void)dealloc
+{
+    [self teardownStream];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -261,11 +255,6 @@ NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
     xmppCapabilitiesStorage = nil;
 }
 
-- (void)xmppStream:(XMPPStream *)sender socketDidConnect:(GCDAsyncSocket *)socket
-{
-    //	DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
-}
-
 // It's easy to create XML elments to send and to read received XML elements.
 // You have the entire NSXMLElement and NSXMLNode API's.
 //
@@ -340,7 +329,7 @@ NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
                                                   otherButtonTitles:nil];
         [alertView show];
         
-        //		DDLogError(@"Error connecting: %@", error);
+        DDLogError(@"Error connecting: %@", error);
         
         return NO;
     }
@@ -355,8 +344,56 @@ NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma mark UIApplicationDelegate
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)applicationDidEnterBackground:(UIApplication *)application
+{
+    // Use this method to release shared resources, save user data, invalidate timers, and store
+    // enough application state information to restore your application to its current state in case
+    // it is terminated later.
+    //
+    // If your application supports background execution,
+    // called instead of applicationWillTerminate: when the user quits.
+    
+    //	DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
+    
+#if TARGET_IPHONE_SIMULATOR
+    //	DDLogError(@"The iPhone simulator does not process background network traffic. "
+    //			   @"Inbound traffic is queued until the keepAliveTimeout:handler: fires.");
+#endif
+    
+    if ([application respondsToSelector:@selector(setKeepAliveTimeout:handler:)])
+    {
+        [application setKeepAliveTimeout:600 handler:^{
+            
+            //			DDLogVerbose(@"KeepAliveHandler");
+            
+            // Do other keep alive stuff here.
+        }];
+    }
+}
+
+- (void)applicationWillEnterForeground:(UIApplication *)application
+{
+    //	DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
+}
+
+- (void)applicationWillTerminate:(UIApplication *)application
+{
+    //    DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
+    
+    [self teardownStream];
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma mark XMPPStream Delegate
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+- (void)xmppStream:(XMPPStream *)sender socketDidConnect:(GCDAsyncSocket *)socket
+{
+    //	DDLogVerbose(@"%@: %@", THIS_FILE, THIS_METHOD);
+}
 
 - (void)xmppStream:(XMPPStream *)sender willSecureWithSettings:(NSMutableDictionary *)settings
 {
@@ -557,7 +594,7 @@ NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
     if ([[UIApplication sharedApplication] applicationState] == UIApplicationStateActive)
     {
         UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:displayName
-                                                            message:body
+                                                            message:body 
                                                            delegate:nil 
                                                   cancelButtonTitle:@"Not implemented"
                                                   otherButtonTitles:nil];
@@ -574,4 +611,5 @@ NSString *const kXMPPmyPassword = @"kXMPPmyPassword";
     }
     
 }
+
 @end
